@@ -6,7 +6,7 @@
     "ALBUM_FLUSH_DELAY_PHOTO_SECONDS": 5,
     "ALBUM_FLUSH_DELAY_VIDEO_SECONDS": 10,
     "LOCAL_API": {
-        "enabled": false,
+        "enabled": true,
         "api_id": "39252475",
         "api_hash": "f16c1f54d5eab45024097dc65193c1d7",
         "executable_path": "/home/etejah-bot/bot2/telegram-bot-api",
