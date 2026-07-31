@@ -4,3 +4,5 @@ __pycache__/
 backup/
 crash_logs.txt
 bridge.log
+pending_uploads.jsonl
+bridge_cache/

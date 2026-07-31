@@ -4,5 +4,27 @@
     "RUBIKA_DEFAULT_CHAT_ID": "c0DMQdZ0c8fe9dd53f324ca1f93ac249",
     "MY_CHANNEL_LINK": "@IranBelArabi",
     "ALBUM_FLUSH_DELAY_PHOTO_SECONDS": 5,
-    "ALBUM_FLUSH_DELAY_VIDEO_SECONDS": 10
+    "ALBUM_FLUSH_DELAY_VIDEO_SECONDS": 10,
+    "LOCAL_API": {
+        "enabled": false,
+        "api_id": "",
+        "api_hash": "",
+        "executable_path": "",
+        "host": "127.0.0.1",
+        "port": 8081,
+        "start_server": false,
+        "max_download_mb": 2000
+    },
+    "SHARED_CACHE": {
+        "dir": "/home/etejah-bot/bot2/bridge-cache",
+        "keep_hours": 1,
+        "max_gb": 20
+    },
+    "UPLOAD": {
+        "max_attempts": 3,
+        "retry_delay_sec": 30,
+        "base_timeout_sec": 120,
+        "timeout_per_mb": 5,
+        "pending_queue": "pending_uploads.jsonl"
+    }
 }
