@@ -40,7 +40,7 @@ ALBUM_FLUSH_DELAY_PHOTO_SECONDS = CONFIG.get("ALBUM_FLUSH_DELAY_PHOTO_SECONDS", 
 ALBUM_FLUSH_DELAY_VIDEO_SECONDS = CONFIG.get("ALBUM_FLUSH_DELAY_VIDEO_SECONDS", 10)
 
 MAX_PARALLEL_UPLOADS = 1
-TELEGRAM_MAX_DOWNLOAD_BYTES = 18 * 1024 * 1024  # 18MB
+TELEGRAM_MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024  # 20MB (Telegram Bot API download limit)
 TG_GETFILE_RETRIES = 4
 TG_RETRY_BASE_DELAY = 1.0
 MAX_SEND_ATTEMPTS = 6
@@ -49,7 +49,11 @@ LOG_TAG_RUBIKA = "#BRIDGE_LOG_RUBIKA"
 LOG_TAG_BALE = "#BRIDGE_LOG_BALE"
 LOG_PREFIX = f"🔔 [Rubika Bridge] مربوط به برنامه «روبیکا»\n{LOG_TAG_RUBIKA}\n"
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler("bridge.log", encoding="utf-8")],
+)
 log = logging.getLogger("bridge")
 
 # =========================
@@ -395,6 +399,11 @@ async def handle_telegram_message_to_rubika(context, rubika_chat_id: str, msg_ob
             v = msg_obj.voice
             await SEND_QUEUE.put(SendJob(source_kind, tg_chat_id, tg_message_id, rubika_chat_id, "voice", "File", v.file_id, ".ogg", None, getattr(v, "file_size", None), None, caption))
             return
+
+        if getattr(msg_obj, "video_note", None):
+            v = msg_obj.video_note
+            await SEND_QUEUE.put(SendJob(source_kind, tg_chat_id, tg_message_id, rubika_chat_id, "video_note", "File", v.file_id, ".mp4", None, getattr(v, "file_size", None), None, caption))
+            return
             
         if getattr(msg_obj, "sticker", None):
             s = msg_obj.sticker
@@ -441,7 +450,7 @@ def main() -> None:
     threading.Thread(target=watchdog_thread, daemon=True).start()
 
     request = HTTPXRequest(connect_timeout=30.0, read_timeout=90.0, write_timeout=90.0, pool_timeout=30.0)
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).request(request).build()
+    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).request(request).post_init(start_background_tasks).build()
 
     app.add_handler(MessageHandler(filters.UpdateType.CHANNEL_POSTS, on_channel_post))
     app.add_handler(MessageHandler((filters.ChatType.GROUP | filters.ChatType.SUPERGROUP) & ~filters.COMMAND, on_group_message))
@@ -449,8 +458,6 @@ def main() -> None:
     class _FakeCtx:
         def __init__(self, bot): self.bot = bot
     app.bot_data["_ctx_for_workers"] = _FakeCtx(app.bot)
-
-    app.post_init = start_background_tasks
 
     log.info("Bridge is running... (Polling)")
     
