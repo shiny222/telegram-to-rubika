@@ -435,10 +435,14 @@ async def send_worker(app, worker_id: int) -> None:
         job = await SEND_QUEUE.get()
         # Write-ahead: persist fresh jobs before attempting the send so a
         # mid-flight kill (e.g. a systemd 20-min restart) cannot lose the job.
+        # Guarded so a persist failure can never kill the worker task.
         if not job.recovered:
-            _wa_key = job.pending_key()
-            if _wa_key:
-                _add_pending({"key": _wa_key, "job": asdict(job)})
+            try:
+                _wa_key = job.pending_key()
+                if _wa_key:
+                    _add_pending({"key": _wa_key, "job": asdict(job)})
+            except Exception:
+                log.exception("write-ahead persist failed; continuing")
         success = False
         last_error = None
 
