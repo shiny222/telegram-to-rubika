@@ -337,12 +337,22 @@ async def _download_to_cache(context, file_id: str, file_unique_id: str, suffix:
 def _load_pending() -> Dict[str, dict]:
     if not os.path.exists(PENDING_FILE):
         return {}
+    records: Dict[str, dict] = {}
     try:
         with open(PENDING_FILE, "r", encoding="utf-8") as f:
-            return {json.loads(l)["key"]: json.loads(l) for l in f if l.strip()}
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                    records[rec["key"]] = rec
+                except Exception:
+                    log.warning("skipping corrupt pending line: %s", line[:100])
     except Exception as e:
         log.warning("pending load failed: %s", e)
         return {}
+    return records
 
 def _save_pending(records: Dict[str, dict]):
     try:
@@ -423,6 +433,12 @@ async def send_worker(app, worker_id: int) -> None:
 
     while True:
         job = await SEND_QUEUE.get()
+        # Write-ahead: persist fresh jobs before attempting the send so a
+        # mid-flight kill (e.g. a systemd 20-min restart) cannot lose the job.
+        if not job.recovered:
+            _wa_key = job.pending_key()
+            if _wa_key:
+                _add_pending({"key": _wa_key, "job": asdict(job)})
         success = False
         last_error = None
 
