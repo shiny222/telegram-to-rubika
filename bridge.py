@@ -110,6 +110,14 @@ def watchdog_thread():
 # =========================
 class RubikaError(Exception): pass
 class RubikaUploadTemporaryError(RubikaError): pass
+class RubikaFileTooBigError(RubikaError): pass
+
+FILE_TOO_BIG_RE = re.compile(
+    r"file[\s_]+is[\s_]+too[\s_]+big|file_size_exceeded|too[\s_]+large|"
+    r"exceeds.{0,20}limit|413|too[\s_]+big|limit.{0,20}exceed|entity[\s_]+too[\s_]+large|"
+    r"file[\s_]+too[\s_]+large",
+    re.IGNORECASE,
+)
 
 def _rubika_url(method: str) -> str:
     return f"https://botapi.rubika.ir/v3/{RUBIKA_TOKEN}/{method}"
@@ -127,13 +135,16 @@ def _rubika_call(method: str, payload: Optional[dict] = None, timeout: int = 20)
     except Exception:
         raise RubikaError(f"Rubika non-JSON response: {r.text[:400]}")
 
-    if r.status_code >= 400:
-        raise RubikaError(f"Rubika HTTP {r.status_code}: {json.dumps(data, ensure_ascii=False)[:600]}")
-
-    if isinstance(data, dict):
-        status = str(data.get("status", "")).upper()
-        if data.get("ok") is False or status == "ERROR":
-            raise RubikaError(f"Rubika Error: {data}")
+    is_error = r.status_code >= 400 or (isinstance(data, dict) and (
+        data.get("ok") is False or str(data.get("status", "")).upper() == "ERROR"
+    ))
+    if is_error:
+        desc = json.dumps(data, ensure_ascii=False)[:600]
+        if FILE_TOO_BIG_RE.search(desc):
+            raise RubikaFileTooBigError(f"Rubika rejected file (too big): {desc}")
+        if r.status_code >= 400:
+            raise RubikaError(f"Rubika HTTP {r.status_code}: {desc}")
+        raise RubikaError(f"Rubika Error: {data}")
     return data
 
 def rubika_send_text(chat_id: str, text: str) -> None:
@@ -151,7 +162,20 @@ def rubika_upload_file(upload_url: str, file_path: str, timeout: int = 240) -> s
     except requests.RequestException as e:
         raise RubikaUploadTemporaryError(f"Upload failed: {e}") from e
 
-    data = r.json()
+    try:
+        data = r.json()
+    except Exception:
+        raise RubikaUploadTemporaryError(f"Upload non-JSON response (status={r.status_code}): {r.text[:400]}")
+
+    desc = json.dumps(data, ensure_ascii=False)[:600]
+    is_error = r.status_code >= 400 or (isinstance(data, dict) and (
+        data.get("ok") is False or str(data.get("status", "")).upper() == "ERROR"
+    ))
+    if is_error:
+        if FILE_TOO_BIG_RE.search(desc):
+            raise RubikaFileTooBigError(f"Rubika rejected file (too big): {desc}")
+        raise RubikaUploadTemporaryError(f"Upload failed (status={r.status_code}): {desc}")
+
     root = (data.get("data") or data.get("result") or data)
     return root.get("file_id") or data.get("file_id") or root.get("fileId") or root.get("id")
 
@@ -357,6 +381,7 @@ class SendJob:
     text: Optional[str]
     caption: Optional[str]
     file_unique_id: Optional[str] = None
+    recovered: bool = False  # True when reloaded from the pending queue after a restart
 
     def pending_key(self) -> Optional[str]:
         if not self.file_id:
@@ -406,6 +431,17 @@ async def send_worker(app, worker_id: int) -> None:
                 await _process_send_job(context, job)
                 success = True
                 break
+            except RubikaFileTooBigError as e:
+                # Rubika rejected the file (e.g. too big): retrying can never
+                # succeed, so drop it immediately instead of looping forever.
+                last_error = e
+                await telegram_notify_error(
+                    context, job.tg_chat_id, job.tg_message_id,
+                    f"❌ روبیکا این فایل را به دلیل حجم زیاد نپذیرفت و ارسال نشد.\n"
+                    f"نوع: {job.kind}\nجزئیات: {type(e).__name__}: {str(e)[:200]}"
+                )
+                log.warning("DROP job (file too big for Rubika) | kind=%s | %s", job.kind, str(e)[:200])
+                break
             except (RubikaUploadTemporaryError, RubikaError, TimedOut, NetworkError, requests.RequestException, BadRequest) as e:
                 last_error = e
                 delay = _calc_retry_delay(attempt)
@@ -441,17 +477,23 @@ async def send_worker(app, worker_id: int) -> None:
         else:
             key = job.pending_key()
             rec = None
+            # Never keep a job that can never succeed (e.g. rejected as too big) or
+            # that has already been retried after a restart - otherwise the systemd
+            # 20-minute restart cycle would retry it forever.
             if key:
-                rec = {"key": key, "job": asdict(job)}
-                _add_pending(rec)
+                _remove_pending(key)
+                if not job.recovered and not isinstance(last_error, RubikaFileTooBigError):
+                    rec = {"key": key, "job": asdict(job)}
+                    _add_pending(rec)
             err_text = f"جزئیات: {type(last_error).__name__}: {str(last_error)[:300]}" if last_error else ""
-            await telegram_notify_error(
-                context, job.tg_chat_id, job.tg_message_id,
-                f"⚠️ ارسال انجام نشد و بعد از {MAX_SEND_ATTEMPTS} تلاش رها شد."
-                f"{' در صف تلاش مجدد ذخیره شد.' if rec else ''}\n"
-                f"نوع: {job.kind}\n{err_text}"
-            )
-            log.error("DROP job after max attempts")
+            if not isinstance(last_error, RubikaFileTooBigError):
+                await telegram_notify_error(
+                    context, job.tg_chat_id, job.tg_message_id,
+                    f"⚠️ ارسال انجام نشد و بعد از {MAX_SEND_ATTEMPTS} تلاش رها شد."
+                    f"{' در صف تلاش مجدد ذخیره شد.' if rec else ''}\n"
+                    f"نوع: {job.kind}\n{err_text}"
+                )
+            log.error("DROP job after max attempts | kind=%s | %s", job.kind, str(last_error)[:200])
 
         SEND_QUEUE.task_done()
 
@@ -685,10 +727,14 @@ async def start_background_tasks(app):
     asyncio.create_task(cache_sweep_loop())
     _sweep_cache()
 
-    # Recover pending uploads from a previous run (survives restarts)
+    # Recover pending uploads from a previous run (survives restarts). These already
+    # failed a full retry cycle before being persisted, so mark them recovered: if
+    # they fail again they are dropped permanently instead of looping on restarts.
     for rec in _load_pending().values():
         try:
-            SEND_QUEUE.put_nowait(SendJob(**rec["job"]))
+            job_data = dict(rec["job"])
+            job_data["recovered"] = True
+            SEND_QUEUE.put_nowait(SendJob(**job_data))
         except Exception as e:
             log.warning("Could not restore pending job: %s", e)
 
