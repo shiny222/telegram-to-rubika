@@ -12,3 +12,4 @@ config.json
 
 # profiling output
 *.prof
+config.json
