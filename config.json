@@ -1,0 +1,30 @@
+{
+    "TELEGRAM_BOT_TOKEN": "8427906309:AAED6tm3brwmd9gLZt7gj4dLo6f5oV04K0k",
+    "RUBIKA_TOKEN": "HIDBJ0HUNSXPDLQPUJHFHUNDQIEQLBXEQCKNDNOFOPFBFDRCEQMISNMTHINEYTVM",
+    "RUBIKA_DEFAULT_CHAT_ID": "c0DMQdZ0c8fe9dd53f324ca1f93ac249",
+    "MY_CHANNEL_LINK": "@IranBelArabi",
+    "ALBUM_FLUSH_DELAY_PHOTO_SECONDS": 5,
+    "ALBUM_FLUSH_DELAY_VIDEO_SECONDS": 10,
+    "LOCAL_API": {
+        "enabled": true,
+        "api_id": "39252475",
+        "api_hash": "f16c1f54d5eab45024097dc65193c1d7",
+        "executable_path": "/home/etejah-bot/bot2/telegram-bot-api",
+        "host": "127.0.0.1",
+        "port": 8081,
+        "start_server": false,
+        "max_download_mb": 2000
+    },
+    "SHARED_CACHE": {
+        "dir": "/home/etejah-bot/bot2/bridge-cache",
+        "keep_hours": 1,
+        "max_gb": 20
+    },
+    "UPLOAD": {
+        "max_attempts": 3,
+        "retry_delay_sec": 30,
+        "base_timeout_sec": 120,
+        "timeout_per_mb": 5,
+        "pending_queue": "pending_uploads.jsonl"
+    }
+}
