@@ -1,7 +1,0 @@
-winget install Python.Python.3.12
-cd /d "C:\Users\smeis\Desktop\telegram to robica bot"
-py -3.12 -m venv venv
-venv\Scripts\activate
-python -m pip install -U pip
-python -m pip install python-telegram-bot requests
-python bridge.py
