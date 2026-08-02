@@ -23,4 +23,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: etejah/t2rubika:latest
+          tags: shiny222/etejah/t2rubika:latest
