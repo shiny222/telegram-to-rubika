@@ -6,3 +6,9 @@ crash_logs.txt
 bridge.log
 pending_uploads.jsonl
 bridge_cache/
+
+# secrets - never commit the real config
+config.json
+
+# profiling output
+*.prof

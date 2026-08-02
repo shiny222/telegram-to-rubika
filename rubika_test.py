@@ -1,11 +1,14 @@
-import requests
 import json
+import requests
 
-TOKEN = "HIDBJ0HUNSXPDLQPUJHFHUNDQIEQLBXEQCKNDNOFOPFBFDRCEQMISNMTHINEYTVM"
+with open("config.json", encoding="utf-8") as f:
+    config = json.load(f)
+
+TOKEN = config["RUBIKA_TOKEN"]
 URL = f"https://botapi.rubika.ir/v3/{TOKEN}/sendMessage"
 
 payload = {
-    "chat_id": "c0DMQdZ0c8fe9dd53f324ca1f93ac249",
+    "chat_id": config.get("RUBIKA_DEFAULT_CHAT_ID", ""),
     "text": "تست مستقیم"
 }
 

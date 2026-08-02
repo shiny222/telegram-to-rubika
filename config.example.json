@@ -1,0 +1,30 @@
+{
+    "TELEGRAM_BOT_TOKEN": "YOUR_TELEGRAM_BOT_TOKEN",
+    "RUBIKA_TOKEN": "YOUR_RUBIKA_TOKEN",
+    "RUBIKA_DEFAULT_CHAT_ID": "YOUR_RUBIKA_CHAT_ID",
+    "MY_CHANNEL_LINK": "@YourChannel",
+    "ALBUM_FLUSH_DELAY_PHOTO_SECONDS": 5,
+    "ALBUM_FLUSH_DELAY_VIDEO_SECONDS": 10,
+    "LOCAL_API": {
+        "enabled": true,
+        "api_id": "YOUR_TELEGRAM_API_ID",
+        "api_hash": "YOUR_TELEGRAM_API_HASH",
+        "executable_path": "/path/to/telegram-bot-api",
+        "host": "127.0.0.1",
+        "port": 8081,
+        "start_server": false,
+        "max_download_mb": 2000
+    },
+    "SHARED_CACHE": {
+        "dir": "/path/to/bridge-cache",
+        "keep_hours": 1,
+        "max_gb": 20
+    },
+    "UPLOAD": {
+        "max_attempts": 3,
+        "retry_delay_sec": 30,
+        "base_timeout_sec": 120,
+        "timeout_per_mb": 5,
+        "pending_queue": "pending_uploads.jsonl"
+    }
+}
