@@ -27,8 +27,12 @@ from telegram.ext import (
 # =========================
 # Load Config & Links
 # =========================
-with open("config.json", "r", encoding="utf-8") as f:
-    CONFIG = json.load(f)
+try:
+    with open("config.json", "r", encoding="utf-8") as f:
+        CONFIG = json.load(f)
+except FileNotFoundError:
+    # Docker supplies the complete configuration through environment variables.
+    CONFIG = {}
 
 # =========================
 # Environment Variable Overrides
@@ -129,8 +133,8 @@ RUBIKA_DEFAULT_CHAT_ID = CONFIG["RUBIKA_DEFAULT_CHAT_ID"]
 MY_CHANNEL_LINK = CONFIG["MY_CHANNEL_LINK"]
 
 RUBIKA_ROUTE = {}
-ALBUM_FLUSH_DELAY_PHOTO_SECONDS = CONFIG.get("ALBUM_FLUSH_DELAY_PHOTO_SECONDS", 5)
-ALBUM_FLUSH_DELAY_VIDEO_SECONDS = CONFIG.get("ALBUM_FLUSH_DELAY_VIDEO_SECONDS", 10)
+ALBUM_FLUSH_DELAY_PHOTO_SECONDS = float(CONFIG.get("ALBUM_FLUSH_DELAY_PHOTO_SECONDS", 5))
+ALBUM_FLUSH_DELAY_VIDEO_SECONDS = float(CONFIG.get("ALBUM_FLUSH_DELAY_VIDEO_SECONDS", 10))
 
 MAX_PARALLEL_UPLOADS = 1
 TG_GETFILE_RETRIES = 4
@@ -138,10 +142,10 @@ TG_RETRY_BASE_DELAY = 1.0
 
 # ---- Optional Local Bot API server ----
 LOCAL_API = CONFIG.get("LOCAL_API", {})
-LOCAL_API_ENABLED = bool(LOCAL_API.get("enabled", False))
+LOCAL_API_ENABLED = str(LOCAL_API.get("enabled", False)).lower() in ("1", "true", "yes", "on")
 LOCAL_API_HOST = LOCAL_API.get("host", "127.0.0.1")
 LOCAL_API_PORT = int(LOCAL_API.get("port", 8081))
-LOCAL_API_START_SERVER = bool(LOCAL_API.get("start_server", False))
+LOCAL_API_START_SERVER = str(LOCAL_API.get("start_server", False)).lower() in ("1", "true", "yes", "on")
 LOCAL_API_EXECUTABLE = LOCAL_API.get("executable_path", "")
 LOCAL_API_ID = LOCAL_API.get("api_id", "")
 LOCAL_API_HASH = LOCAL_API.get("api_hash", "")
