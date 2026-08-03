@@ -12,7 +12,6 @@ RUN python -m pip install --no-cache-dir -r requirements.txt
 
 COPY bridge.py .
 
-COPY config.example.json .
 
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app
