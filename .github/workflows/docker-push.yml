@@ -1,9 +1,16 @@
-name: Build and Push Docker Image
+name: Publish Rubika image
 
 on:
   push:
-    branches: [server-code]
+    branches: [main, server-code, docker-migration]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rubika-image-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
@@ -12,6 +19,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -19,8 +29,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: shiny222/etejah:rubika-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
