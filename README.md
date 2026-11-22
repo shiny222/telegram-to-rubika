@@ -8,6 +8,14 @@ Forwards messages, photos and videos from a Telegram channel to a Rubika chat/ch
 - A Telegram bot token (from [@BotFather](https://t.me/BotFather))
 - A Rubika account token
 
+## Installation
+
+Use [Direct Setup for the Bots](https://github.com/shiny222/direct-setup-the-bots)
+to install this bot with a local Telegram Bot API. The setup repository includes
+a Linux systemd installer and Docker launchers for Linux and Windows.
+
+Choose scenario **1** for Rubika, **2** for Bale, or **3** to run both.
+
 ## Setup
 
 ### 1. Create your config
@@ -78,6 +86,3 @@ automatically on first run.
 ### Update
 
 `./update.sh` (Linux) or `update.bat` (Windows) pulls the latest code from git.
-
-
- ### not that u can use the dockerfile to genrat image and run in docker
