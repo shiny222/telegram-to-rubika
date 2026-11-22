@@ -78,12 +78,3 @@ automatically on first run.
 ### Update
 
 `./update.sh` (Linux) or `update.bat` (Windows) pulls the latest code from git.
-
-## Useful tools
-
-- `rubika_test.py` — sends a test message straight to Rubika (reads your token from `config.json`)
-
-## Security
-
-- Never commit `config.json` — it is listed in `.gitignore`.
-- If a token ever leaks to a public repo, **revoke it immediately** and regenerate it.
