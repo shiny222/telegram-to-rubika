@@ -78,3 +78,6 @@ automatically on first run.
 ### Update
 
 `./update.sh` (Linux) or `update.bat` (Windows) pulls the latest code from git.
+
+
+ ### not that u can use the dockerfile to genrat image and run in docker
